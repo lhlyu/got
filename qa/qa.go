@@ -97,7 +97,6 @@ var defaultQ = []*survey.Question{
 			Message: "密码: ",
 			Default:"",
 		},
-		Validate:  survey.Required,
 	},
 	{
 		Name:      "DB",
