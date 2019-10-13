@@ -20,7 +20,7 @@
 
 2. 下载安装
 
-> go get -u -v https://github.com/lhlyu/got
+> go get -u -v github.com/lhlyu/got
 
 3. 使用
 
