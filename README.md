@@ -28,4 +28,4 @@
 
 ### 预览图
 
-[图1](./previews/preview1.jpg)
+![图1](./previews/preview1.jpg)
