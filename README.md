@@ -16,7 +16,7 @@
 
 - windows && GO 1.11 + 
 
-> set GOPROXY = "https://goproxy.cn"
+> set GOPROXY=https://goproxy.cn
 
 2. 下载安装
 
