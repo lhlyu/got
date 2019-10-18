@@ -2,7 +2,11 @@
 
 连接mysql数据库，将表转换成go struct
 
-## 安装
+## 下载安装
+
+[链接](https://github.com/lhlyu/got/releases)
+
+## 手动编译安装
 
 1. 设置代理
 
