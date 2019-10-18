@@ -9,6 +9,8 @@ import (
 	"github.com/lhlyu/got/g"
 )
 
+const version = "v1.0.1"
+
 func main() {
 	start()
 }

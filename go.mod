@@ -5,3 +5,5 @@ require (
 	github.com/atotto/clipboard v0.1.2
 	github.com/jmoiron/sqlx v1.2.0
 )
+
+go 1.13
