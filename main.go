@@ -4,12 +4,12 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/lhlyu/got/db"
+	"github.com/lhlyu/got/g"
 	"github.com/lhlyu/got/qa"
 	"log"
-	"github.com/lhlyu/got/g"
 )
 
-const version = "v1.0.1"
+const version = "v1.1.0"
 
 func main() {
 	start()
@@ -46,28 +46,6 @@ func start(){
 	dao := db.NewDao("mysql")
 	dao.SetDB(conf)
 	tf := dao.QueryTables()
-	hasJson := false
-	hasDb := false
-	isSingle := false
-	isMutil := false
-	isClip := false
-	dir := ""
-	for _,v := range answer.Advance{
-		switch v {
-		case qa.OptionJson:
-			hasJson = true
-		case qa.OptionDb:
-			hasDb = true
-		case qa.OptionSingle:
-			dir = "./"
-			isSingle = true
-		case qa.OptionMutil:
-			dir = "./"
-			isMutil = true
-		case qa.OptionClip:
-			isClip = true
-		}
-	}
-	gor := g.NewGor(hasJson,hasDb,false,isSingle,isMutil,isClip,"mysql",dir,nil)
+	gor := g.NewGor(answer.Tags,answer.OutWay,"mysql",nil)
 	gor.Run(tf)
 }

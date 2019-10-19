@@ -15,17 +15,25 @@ type Answer struct {
 	Port  string
 	DB    string
 	Table string
-	Advance []string
+	Tags []string
+	OutWay string
 	Save  bool
 }
 
 const Custom = "自定义"
 const (
-	OptionJson = "添加JSON标签"
-	OptionDb = "添加DB标签"
-	OptionSingle = "写入到单个文件"
-	OptionMutil = "写入到多个文件"
-	OptionClip = "写入到剪贴板"
+	OptionJson = `json:"小驼峰"`
+	OptionDb = `db:"原生名字"`
+	OptionXorm = `xorm:"原生名字"`
+	OptionGorm = `gorm:"原生名字"`
+	OptionValid = `valid:"小驼峰"`
+	OptionPlaceholder1 = `###:"小驼峰"`
+	OptionPlaceholder2 = `@@@:"原生名字"`
+)
+const (
+	RadioSingle = "写入到单个文件"
+	RadioMutil  = "写入到多个文件"
+	RadioClip   = "写入到剪贴板"
 )
 
 func NewQuestions(flag int) []*survey.Question{
@@ -114,11 +122,20 @@ var defaultQ = []*survey.Question{
 		},
 	},
 	{
-		Name:      "Advance",
+		Name:      "Tags",
 		Prompt: &survey.MultiSelect{
-			Message: "高级设置(空格选择):",
-			Options: []string{OptionJson, OptionDb, OptionMutil,OptionSingle,OptionClip},
-			Default: []string{OptionClip},
+			Message: "添加标签(空格选择):",
+			Options: []string{OptionJson,OptionDb,
+				OptionXorm,OptionGorm,OptionValid,OptionPlaceholder1,OptionPlaceholder2},
+			Default: []string{OptionJson},
+		},
+	},
+	{
+		Name:      "OutWay",
+		Prompt: &survey.Select{
+			Message: "输出方式(空格选择):",
+			Options: []string{RadioSingle, RadioMutil, RadioClip},
+			Default: RadioClip,
 		},
 	},
 	{
@@ -139,11 +156,20 @@ var configQ = []*survey.Question{
 		},
 	},
 	{
-		Name:      "Advance",
+		Name:      "Tags",
 		Prompt: &survey.MultiSelect{
-			Message: "高级设置(空格选择):",
-			Options: []string{OptionJson, OptionDb, OptionMutil,OptionSingle,OptionClip},
-			Default: []string{OptionClip},
+			Message: "添加标签(空格选择):",
+			Options: []string{OptionJson,OptionDb,
+				OptionXorm,OptionGorm,OptionValid,OptionPlaceholder1,OptionPlaceholder2},
+			Default: []string{OptionJson},
+		},
+	},
+	{
+		Name:      "OutWay",
+		Prompt: &survey.Select{
+			Message: "输出方式(空格选择):",
+			Options: []string{RadioSingle, RadioMutil, RadioClip},
+			Default: RadioClip,
 		},
 	},
 }

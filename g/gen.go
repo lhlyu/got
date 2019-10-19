@@ -1,25 +1,22 @@
 package g
 
 import (
+	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/lhlyu/got/db"
-	"strings"
+	"github.com/lhlyu/got/qa"
+	"github.com/lhlyu/got/util"
 	"regexp"
 	"strconv"
-	"github.com/atotto/clipboard"
-	"fmt"
-	"github.com/lhlyu/got/util"
+	"strings"
 )
 
 const indent = "    "  // 缩进
 const gap = 2
 
 type gor struct {
-	hasJson   bool           // 是否生成json标签
- 	hasDb     bool           // 是否生成db标签
-	hasGSst   bool           // 是否生成get set方法
-	isSingle  bool           // 所有struct写入到一个文件
-	isMutil  bool            // 每个struct写入到一个文件
-	isClip    bool
+	Tags      []string
+	OutWay    string
 	driverName string
 	dir       string         // 输出文件夹地址
 	name      func(columnName string) string  // 修改命名规则，默认是匈牙利命名(大驼峰)，下划线会自动去掉，例子如下
@@ -30,136 +27,187 @@ abcd    => Abcd
 ab_cd   => AbCd
  */
 
-func NewGor(hasJson,hasDb,hasGSst,isSingle,isMutil,isClip bool,driverName,dir string,name func(columnName string) string) *gor{
-	return &gor{hasJson,hasDb,hasGSst,isSingle,isMutil,isClip,driverName,dir,name}
+func NewGor(tags []string,outway,driverName string,name func(columnName string) string) *gor{
+	return &gor{tags,outway,driverName,"./",name}
 }
 
 func (g *gor) Run(ds []*db.TableInfo) {
 	if len(ds) == 0{
+		fmt.Println("没有找到表")
 		return
 	}
 	typeMap := getTypeMap(g.driverName)
-	tabMap := make(map[string][]*Column)
-	attrMap := make(map[string]*ColumnAttr)
-	timeMap := make(map[string]bool)
+
+	tableMap := make(map[string][]*Column)
+	tableLenMap := make(map[string]*ColumnLen)
+
 	for _,d := range ds{
-		t,has := tabMap[d.TabelName]
+		cs,has := tableMap[d.TabelName]
 		if !has{
-			t = make([]*Column,0)
+			cs = make([]*Column,0)
 		}
 		c := &Column{
-			ColumnName: d.ColumnName,
-			ColumnComment: d.ColumnComment,
+			Name:         d.ColumnName,
+			Type:         getType(d.ColumnType,typeMap),
+			TitleName:    toTitle(d.ColumnName),
+			SmallName:    toSmallHump(d.ColumnName),
+			Comment:      d.ColumnComment,
 		}
-		c.Type = getType(d.ColumnType,typeMap)
-		c.JsonName = toSmallHump(d.ColumnName)
-		if g.name != nil{
-			c.Name = g.name(d.ColumnName)
+		cs = append(cs,c)
+		tableMap[d.TabelName] = cs
+
+		le,has := tableLenMap[d.TabelName]
+		if !has{
+			tableLenMap[d.TabelName] = &ColumnLen{
+				NameLen:      len(c.Name),
+				TitleNameLen: len(c.TitleName),
+				SmallNameLen: len(c.SmallName),
+				TypeLen:      len(c.Type),
+			}
 		}else{
-			c.Name = toTitle(d.ColumnName)
-		}
-		t = append(t,c)
-		tabMap[d.TabelName] = t
-
-		if c.Type == "time.Time"{
-			timeMap[d.TabelName] = true
-		}
-
-		attr,ok := attrMap[d.TabelName]
-		if !ok{
-			attr = &ColumnAttr{}
-		}
-		if len(c.Name) > attr.NameLen{
-			attr.NameLen = len(c.Name)
-		}
-		if len(c.Type) > attr.TypeLen{
-			attr.TypeLen = len(c.Type)
-		}
-		if len(c.ColumnName) > attr.ColumnLen{
-			attr.ColumnLen = len(c.ColumnName)
-		}
-		if len(c.JsonName) > attr.JsonLen{
-			attr.JsonLen = len(c.JsonName)
-		}
-		attrMap[d.TabelName] = attr
-	}
-	modelMap := make(map[string]string)
-	for key,value := range tabMap{
-		attr := attrMap[key]
-		format := "%s%-" + strconv.Itoa(attr.NameLen + gap) + "s%-" +  strconv.Itoa(attr.TypeLen + gap) +  "s"
-		tag := ""
-		if g.hasJson{
-			tag += `json:%-` + strconv.Itoa(attr.JsonLen + gap) + `s`
-		}
-		if g.hasDb{
-			if len(tag) > 0{
-				tag += "  "
+			if le.NameLen < len(c.Name){
+				le.NameLen = len(c.Name)
 			}
-			tag += `db:%-` + strconv.Itoa(attr.ColumnLen + gap) + `s`
+			if le.TitleNameLen < len(c.TitleName){
+				le.TitleNameLen = len(c.TitleName)
+			}
+			if le.SmallNameLen < len(c.SmallName){
+				le.SmallNameLen = len(c.SmallName)
+			}
+			if le.TypeLen < len(c.Type){
+				le.TypeLen = len(c.Type)
+			}
+			tableLenMap[d.TabelName] = le
 		}
-		if len(tag) > 0{
-			format += "`" + tag + "`"
+	}
+
+	// table handler
+
+	tMap := make(map[string][]*Row)
+	tlMap := make(map[string]int)
+	for t,cs := range tableMap{
+
+		le := tableLenMap[t]
+		for _,c := range cs{
+			tags := ""
+			for _,tag := range g.Tags{
+				if tf,has := tagMap[tag];has{
+					switch tf.T {
+					case 0:
+						format := tf.Name + `:%-` + strconv.Itoa(le.NameLen + gap*2) + `s`
+						tags += fmt.Sprintf(format,`"` + c.Name + `"`)
+					case 1:
+						format := tf.Name + `:%-` + strconv.Itoa(le.TitleNameLen + gap*2) + `s`
+						tags += fmt.Sprintf(format,`"` + c.TitleName + `"`)
+					case 2:
+						format := tf.Name + `:%-` + strconv.Itoa(le.SmallNameLen + gap*2) + `s`
+						tags += fmt.Sprintf(format,`"` + c.SmallName + `"`)
+					}
+
+				}
+			}
+			if len(tags) > 0{
+				tags = strings.TrimRight(tags," ")
+				tags = "`" + tags + "`"
+			}
+			format := "%s%-" + strconv.Itoa(le.TitleNameLen + gap) + "s%-" + strconv.Itoa(le.TypeLen) + "s  %s"
+			buf := NewBufer()
+			buf.Addf(format,indent,c.TitleName,c.Type,tags)
+
+
+			tl,has := tlMap[t]
+			if !has{
+				tl = len(buf.String())
+			}
+			if tl < len(buf.String()){
+				tl = len(buf.String())
+			}
+			tlMap[t] = tl
+
+
+			ts,has := tMap[t]
+			if !has{
+				ts = make([]*Row,0)
+			}
+			row := &Row{
+				S: buf.String(),
+				C: c.Comment,
+				B: c.Type == "time.Time",
+			}
+			ts = append(ts,row)
+			tMap[t] = ts
+
 		}
 
+	}
+
+	tabMap := make(map[string]*Tab)
+
+	for k,value := range tMap{
 		buf := NewBufer()
-		buf.Addf("type %s struct {\n",toTitle(key))
+		buf.Addf("type %s struct {\n",toTitle(k))
+		b := false
 		for _,v := range value{
-			params := []interface{}{indent,v.Name,v.Type}
-			if g.hasJson{
-				params = append(params,`"` + v.JsonName+`"`)
+			format := "%-" +strconv.Itoa(tlMap[k] + gap) + "s"
+			if v.C != ""{
+				format += " // " + v.C
 			}
-			if g.hasDb{
-				params = append(params,`"` + v.ColumnName+`"`)
-			}
-			buf.Addf(format,params...)
-			if len(v.ColumnComment) > 0{
-				buf.Add("  // ",v.ColumnComment)
-			}
+			buf.Addf(format,v.S)
 			buf.Add("\n")
+			if v.B{
+				b = true
+			}
 		}
-		buf.Add("}\n")
-		modelMap[key] = buf.String()
+		buf.Addf("}\n")
+		tabMap[k] = &Tab{
+			T: buf.String(),
+			B: b,
+		}
 	}
-	g.out(modelMap,timeMap)
+
+	g.out(tabMap)
 	return
 }
 
-func (g *gor) out(m map[string]string,t map[string]bool){
-	buf := NewBufer()
-	for _,v := range m{
-		buf.Add(v)
-		buf.Add("\n")
-	}
-	if g.isClip{
-		clipboard.WriteAll(buf.String())
-		fmt.Println("内容已写入到剪贴板")
-	}
-	if g.isSingle{
-		hasTimePackage := false
-		for _,v := range t{
-			if v{
-				hasTimePackage = true
+func (g *gor) out(m map[string]*Tab){
+	switch g.OutWay {
+	case qa.RadioSingle:
+		buf := NewBufer()
+		b := false
+		for _,v := range m{
+			buf.Add(v.T)
+			buf.Add("\n")
+			if v.B{
+				b = true
 			}
 		}
 		content := "package model\n\n"
-		if hasTimePackage{
+		if b{
 			content += "import \"time\"\n\n"
 		}
 		content += buf.String()
 		util.WriteFile(g.dir + "model.go",content)
 		fmt.Printf("内容已写入到model.go文件\n")
-	}
-	if g.isMutil{
+	case qa.RadioMutil:
 		for k,v := range m{
-			hasTimePackage := t[k]
-			content := "package model\n\n"
-			if hasTimePackage{
-				content += "import \"time\"\n\n"
+			buf := NewBufer()
+			buf.Add("package model\n\n")
+			if v.B{
+				buf.Add("import \"time\"\n\n")
 			}
-			content += v
-			util.WriteFile(g.dir + k + ".go",content)
+			buf.Add(v.T)
+			buf.Add("\n")
+			util.WriteFile(g.dir + k + ".go",buf.String())
 			fmt.Printf("表%s内容已写入到%s.go文件\n",k,k)
 		}
+	case qa.RadioClip:
+		buf := NewBufer()
+		for _,v := range m{
+			buf.Add(v.T)
+			buf.Add("\n")
+		}
+		clipboard.WriteAll(buf.String())
+		fmt.Println("内容已写入剪贴板")
 	}
 	return
 }
