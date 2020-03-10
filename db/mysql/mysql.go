@@ -1,13 +1,10 @@
 package mysql
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/lhlyu/got/db/core"
-	"github.com/lhlyu/yutil/v2"
-	"go/format"
 	"log"
 	"strings"
 )
@@ -24,7 +21,7 @@ const (
 	query_indexs = `SELECT INDEX_NAME, NON_UNIQUE, COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`
 )
 
-var kind = map[string]string{
+var dict = map[string]string{
 	"bigint":             "int64",
 	"bigint unsigned":    "uint64",
 	"binary":             "[]byte",
@@ -57,14 +54,16 @@ var kind = map[string]string{
 	"timestamp":          "time.Time",
 	"tinyblob":           "[]byte",
 	"tinyint":            "int",
+	"tinyint unsigned":   "uint",
 	"varbinary":          "[]byte",
 	"varchar":            "string",
 	"year":               "time.Time",
 }
 
 type Mysql struct {
-	db  *sql.DB
-	cfg *core.Config
+	db   *sql.DB
+	cfg  *core.Config
+	dict map[string]string
 }
 
 func (d *Mysql) Connect(cfg *core.Config) {
@@ -75,6 +74,7 @@ func (d *Mysql) Connect(cfg *core.Config) {
 	}
 	d.db = DB
 	d.cfg = cfg
+	d.dict = dict
 }
 
 func (d *Mysql) GetTables() []*core.Table {
@@ -155,32 +155,6 @@ func (*Mysql) GetIndexs(tableName string) []*core.Index {
 	return nil
 }
 
-func (*Mysql) ToStruct(tabs ...*core.Table) map[string]string {
-	m := make(map[string]string)
-	for _, tab := range tabs {
-		buf := bytes.Buffer{}
-		if tab.Comment != "" {
-			buf.WriteString(fmt.Sprintf("// %s\n", tab.Comment))
-		}
-		buf.WriteString(fmt.Sprintf("type %s struct {\n", yutil.String.BigCamelCase(tab.Name)))
-		for _, col := range tab.Columns {
-			fieldName := yutil.String.BigCamelCase(col.Name)
-			fieldType := kind[col.DataType]
-			if col.IsUnsigned {
-				fieldType = kind[col.DataType+" unsigned"]
-			}
-			// tinyint 存在无符
-			fieldTag := ""
-			fieldComment := ""
-			if col.Comment != "" {
-				fieldComment = "// " + col.Comment
-			}
-			buf.WriteString(fmt.Sprintf("%s %s %s %s\n", fieldName, fieldType, fieldTag, fieldComment))
-		}
-		buf.WriteString("}\n")
-		bts, _ := format.Source(buf.Bytes())
-		fmt.Println(string(bts))
-		m[tab.Name] = string(bts)
-	}
-	return m
+func (s *Mysql) GetDict() map[string]string {
+	return s.dict
 }

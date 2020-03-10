@@ -11,7 +11,7 @@ type DB interface {
 	GetTables() []*core.Table
 	GetColumns(tableName string) []*core.Column
 	GetIndexs(tableName string) []*core.Index
-	ToStruct(tabs ...*core.Table) map[string]string
+	GetDict() map[string]string
 }
 
 func NewDb(driverName string) DB {
