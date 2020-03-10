@@ -12,6 +12,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/lhlyu/yutil/v2 v2.0.2
 	github.com/tealeg/xlsx v1.0.5 // indirect
 	github.com/xormplus/builder v0.0.0-20200306085939-36251cb3cfca // indirect
 	github.com/xormplus/core v0.0.0-20190724072625-00f5a85ad6e0 // indirect
