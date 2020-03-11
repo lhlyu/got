@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/lhlyu/got/db/core"
+	"github.com/lhlyu/got/v2/db/core"
 	"log"
 	"strings"
 )

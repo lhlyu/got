@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"github.com/lhlyu/got/db/core"
+	"github.com/lhlyu/got/v2/db/core"
 	"github.com/lhlyu/yutil/v2"
 )
 

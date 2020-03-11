@@ -1,8 +1,8 @@
 package db
 
 import (
-	"github.com/lhlyu/got/db/core"
-	"github.com/lhlyu/got/db/mysql"
+	"github.com/lhlyu/got/v2/db/core"
+	"github.com/lhlyu/got/v2/db/mysql"
 	"strings"
 )
 

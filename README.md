@@ -27,7 +27,7 @@
 
 #### 下载安装
 
-> go get -u -v github.com/lhlyu/got
+> go get -u -v github.com/lhlyu/got/v2
 
 #### 使用
 

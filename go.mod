@@ -1,4 +1,4 @@
-module github.com/lhlyu/got
+module github.com/lhlyu/got/v2
 
 go 1.13
 
