@@ -21,7 +21,7 @@ const (
 	query_indexs = `SELECT INDEX_NAME, NON_UNIQUE, COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`
 )
 
-var dict = map[string]string{
+var Dict = map[string]string{
 	"bigint":             "int64",
 	"bigint unsigned":    "uint64",
 	"binary":             "[]byte",
@@ -74,7 +74,7 @@ func (d *Mysql) Connect(cfg *core.Config) error {
 	}
 	d.db = DB
 	d.cfg = cfg
-	d.dict = dict
+	d.dict = Dict
 	return nil
 }
 

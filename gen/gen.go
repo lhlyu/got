@@ -67,7 +67,6 @@ func (g *Gen) ToStruct(dict map[string]string, tabs ...*core.Table) map[string]s
 
 		}
 		bts, _ := format.Source(buf.Bytes())
-		fmt.Println(string(bts))
 		m[tab.Name] = string(bts)
 	}
 	return m
