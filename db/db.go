@@ -7,7 +7,7 @@ import (
 )
 
 type DB interface {
-	Connect(cfg *core.Config)
+	Connect(cfg *core.Config) error
 	GetTables() []*core.Table
 	GetColumns(tableName string) []*core.Column
 	GetIndexs(tableName string) []*core.Index

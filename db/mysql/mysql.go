@@ -66,15 +66,16 @@ type Mysql struct {
 	dict map[string]string
 }
 
-func (d *Mysql) Connect(cfg *core.Config) {
+func (d *Mysql) Connect(cfg *core.Config) error {
 	DB, _ := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database))
 	//验证连接
 	if err := DB.Ping(); err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	d.db = DB
 	d.cfg = cfg
 	d.dict = dict
+	return nil
 }
 
 func (d *Mysql) GetTables() []*core.Table {
