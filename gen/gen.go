@@ -6,21 +6,29 @@ import (
 	"github.com/lhlyu/got/db/core"
 	"github.com/lhlyu/yutil/v2"
 	"go/format"
+	"strings"
 )
 
 type Gen struct {
-	tagHandler  func(col *core.Column) string
-	funcHandler func(tab *core.Table) string
+	tagHandlers  []func(col *core.Column) string
+	funcHandlers []func(tab *core.Table) string
 }
 
-func NewGen(tagHandler func(col *core.Column) string, funcHandler func(tab *core.Table) string) Gen {
-	return Gen{
-		tagHandler:  tagHandler,
-		funcHandler: funcHandler,
-	}
+func NewGen() *Gen {
+	return &Gen{}
 }
 
-func (g Gen) ToStruct(dict map[string]string, tabs ...*core.Table) map[string]string {
+func (g *Gen) AddTagHandlers(tagHandlers ...func(col *core.Column) string) *Gen {
+	g.tagHandlers = append(g.tagHandlers, tagHandlers...)
+	return g
+}
+
+func (g *Gen) AddFuncHandlers(funcHandlers ...func(tab *core.Table) string) *Gen {
+	g.funcHandlers = append(g.funcHandlers, funcHandlers...)
+	return g
+}
+
+func (g *Gen) ToStruct(dict map[string]string, tabs ...*core.Table) map[string]string {
 	m := make(map[string]string)
 	for _, tab := range tabs {
 		buf := bytes.Buffer{}
@@ -38,8 +46,12 @@ func (g Gen) ToStruct(dict map[string]string, tabs ...*core.Table) map[string]st
 			}
 			// tinyint 存在无符
 			fieldTag := ""
-			if g.tagHandler != nil {
-				fieldTag = g.tagHandler(col)
+			if g.tagHandlers != nil {
+				var tags []string
+				for _, th := range g.tagHandlers {
+					tags = append(tags, th(col))
+				}
+				fieldTag = fmt.Sprintf("`%s`", strings.Join(tags, " "))
 			}
 			fieldComment := ""
 			if col.Comment != "" {
@@ -48,8 +60,11 @@ func (g Gen) ToStruct(dict map[string]string, tabs ...*core.Table) map[string]st
 			buf.WriteString(fmt.Sprintf("%s %s %s %s\n", fieldName, fieldType, fieldTag, fieldComment))
 		}
 		buf.WriteString("}\n")
-		if g.funcHandler != nil {
-			buf.WriteString(g.funcHandler(tab))
+		if g.funcHandlers != nil {
+			for _, fh := range g.funcHandlers {
+				buf.WriteString(fh(tab))
+			}
+
 		}
 		bts, _ := format.Source(buf.Bytes())
 		fmt.Println(string(bts))

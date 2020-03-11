@@ -50,6 +50,6 @@ func (this *{{.}}) Update(whr map[string]interface{}) error{
 
 `
 
-var GORM_CURD = func(tab *core.Table) string {
+var GORM_CURD_FUNC = func(tab *core.Table) string {
 	return yutil.String.TemplateParse(g, yutil.String.BigCamelCase(tab.Name))
 }
